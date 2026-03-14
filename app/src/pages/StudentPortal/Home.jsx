@@ -1,41 +1,71 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/css";
 import { ArrowLeft, PlusCircle, Ticket, Clock, MessageSquare } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
 
+const API_BASE = "https://w25037936.nuwebspace.co.uk/KV6027/CAETS/api/tickets/index.php";
+
 const CATEGORY_LABELS = {
-  module_content: "Module Content",
-  gradebook: "Gradebook",
-  assessment_submission: "Assessment & Submission",
-  other: "Other",
+  "Module Content": "Module Content",
+  "Gradebook": "Gradebook",
+  "Assessment & Submission": "Assessment & Submission",
+  "Other": "Other",
 };
 
 const getStatusLabel = (status) => {
   const labels = {
-    open: "Open",
-    in_progress: "In Progress",
-    awaiting_response: "Awaiting Response",
-    resolved: "Resolved",
-    closed: "Closed",
+    Open: "Open",
+    "In Progress": "In Progress",
+    "Awaiting Response": "Awaiting Response",
+    Resolved: "Resolved",
+    Closed: "Closed",
   };
   return labels[status] || status;
 };
 
 const getUrgencyStyle = (urgency) => {
   const map = {
-    critical: css`background-color: #fee2e2; color: #991b1b;`,
-    high: css`background-color: #ffedd5; color: #9a3412;`,
-    medium: css`background-color: #fef9c3; color: #854d0e;`,
-    low: css`background-color: #dbeafe; color: #1e40af;`,
+    Critical: css`background-color: #fee2e2; color: #991b1b;`,
+    High: css`background-color: #ffedd5; color: #9a3412;`,
+    Medium: css`background-color: #fef9c3; color: #854d0e;`,
+    Low: css`background-color: #dbeafe; color: #1e40af;`,
   };
-  return map[urgency] || map.low;
+  return map[urgency] || map.Low;
 };
 
-const StudentPortalHome = ({ activeTickets = [] }) => {
+const StudentPortalHome = () => {
   const navigate = useNavigate();
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const res = await fetch(`${API_BASE}?action=my-tickets`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+
+        if (res.ok && data.tickets) {
+          setTickets(data.tickets);
+        }
+      } catch {
+        console.error("Failed to fetch tickets");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, []);
+
+  // Active tickets = not Resolved or Closed
+  const activeTickets = tickets.filter(
+    (t) => t.status !== "Resolved" && t.status !== "Closed"
+  );
 
   return (
     <div className={s.pageWrapper}>
@@ -51,7 +81,7 @@ const StudentPortalHome = ({ activeTickets = [] }) => {
             </div>
           </div>
           <div className={s.headerRight}>
-            <NotificationBell portal="student" userId="student-001" />
+            <NotificationBell portal="student" />
             <UserMenu portal="student" />
           </div>
         </div>
@@ -91,9 +121,9 @@ const StudentPortalHome = ({ activeTickets = [] }) => {
               <div>
                 <h2 className={s.ticketsTitle}>Recent Tickets</h2>
                 <p className={s.ticketsSubtitle}>
-                  Showing {Math.min(3, activeTickets.length)} of{" "}
-                  {activeTickets.length} active ticket
-                  {activeTickets.length !== 1 ? "s" : ""}
+                  {loading
+                    ? "Loading..."
+                    : `Showing ${Math.min(3, activeTickets.length)} of ${activeTickets.length} active ticket${activeTickets.length !== 1 ? "s" : ""}`}
                 </p>
               </div>
               {activeTickets.length > 0 && (
@@ -107,27 +137,29 @@ const StudentPortalHome = ({ activeTickets = [] }) => {
             </div>
 
             <div>
-              {activeTickets.length === 0 ? (
+              {loading ? (
+                <div className={s.emptyState}>Loading tickets...</div>
+              ) : activeTickets.length === 0 ? (
                 <div className={s.emptyState}>
                   No active tickets. Create one to get started!
                 </div>
               ) : (
                 activeTickets.slice(0, 3).map((ticket) => (
                   <button
-                    key={ticket.id}
-                    onClick={() => navigate(`/student/ticket/${ticket.id}`)}
+                    key={ticket.ticket_id}
+                    onClick={() => navigate(`/student/ticket/${ticket.ticket_id}`)}
                     className={s.ticketRow}
                   >
                     <div className={s.ticketTopRow}>
                       <div className={s.ticketInfo}>
                         <div className={s.ticketMeta}>
-                          <span className={s.ticketId}>{ticket.id}</span>
+                          <span className={s.ticketId}>{ticket.ticket_number}</span>
                           <span className={s.metaDot}>·</span>
                           <span className={s.ticketModule}>
-                            {ticket.module || "N/A"}
+                            {ticket.module_code} - {ticket.module_name}
                           </span>
                         </div>
-                        <h3 className={s.ticketTitle}>{ticket.title}</h3>
+                        <h3 className={s.ticketTitle}>{ticket.subject}</h3>
                         <p className={s.ticketDescription}>
                           {ticket.description}
                         </p>
@@ -147,17 +179,15 @@ const StudentPortalHome = ({ activeTickets = [] }) => {
                     </div>
                     <div className={s.ticketFooter}>
                       <span className={s.categoryTag}>
-                        {CATEGORY_LABELS[ticket.category]}
+                        {CATEGORY_LABELS[ticket.category] || ticket.category}
                       </span>
                       <span className={s.footerItem}>
                         <Clock className={s.smallIcon} />
-                        {formatDistanceToNow(new Date(ticket.updatedAt), {
-                          addSuffix: true,
-                        })}
+                        {format(new Date(ticket.updated_at), "dd MMM yyyy, HH:mm")}
                       </span>
                       <span className={s.footerItem}>
                         <MessageSquare className={s.smallIcon} />
-                        {ticket.replies.length}
+                        {ticket.reply_count}
                       </span>
                     </div>
                   </button>
