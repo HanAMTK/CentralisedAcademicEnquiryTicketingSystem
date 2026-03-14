@@ -46,9 +46,6 @@ const Login = () => {
       <div className={s.card}>
         {/* Header */}
         <div className={s.header}>
-          <div className={s.logoCircle}>
-            <LogIn className={s.logoIcon} />
-          </div>
           <h1 className={s.title}>Welcome</h1>
           <p className={s.subtitle}>Sign in to the Academic Enquiry System</p>
         </div>

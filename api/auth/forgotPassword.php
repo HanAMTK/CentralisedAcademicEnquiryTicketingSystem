@@ -1,4 +1,4 @@
-<!-- <?php
+<?php
 // ============================================
 // forgotPassword.php
 // Generates a password reset token and sends email
@@ -107,4 +107,4 @@ function forgotPassword() {
     // Always return success to prevent email enumeration
     echo json_encode(["message" => "If an account exists with that email, a reset link has been sent"]);
     exit();
-} -->
+}
