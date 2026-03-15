@@ -17,6 +17,8 @@ session_start();
 require "createTicket.php";
 require "getModules.php";
 require "getStudentTickets.php";
+require "getTicketDetail.php";
+require "addReply.php";
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -40,6 +42,12 @@ switch ($_GET['action']) {
         break;
     case 'my-tickets':
         getStudentTickets();
+        break;
+    case 'detail':
+        getTicketDetail();
+        break;
+    case 'reply':
+        addReply();
         break;
     default:
         http_response_code(400);

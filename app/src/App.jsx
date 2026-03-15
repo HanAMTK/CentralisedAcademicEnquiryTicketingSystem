@@ -11,6 +11,8 @@ import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 // Portal pages
 import StudentPortalHome from "./pages/StudentPortal/Home.jsx";
 import CreateTicket from "./pages/StudentPortal/CreateTicket.jsx";
+import ViewAllTickets from "./pages/StudentPortal/ViewAllTickets.jsx";
+import TicketDetail from "./pages/StudentPortal/TicketDetail.jsx";
 import LecturerPortalHome from "./pages/LecturerPortal/Home.jsx";
 
 function App() {
@@ -38,6 +40,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["student"]}>
                 <CreateTicket />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/tickets"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <ViewAllTickets />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/ticket/:id"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <TicketDetail />
               </ProtectedRoute>
             }
           />
