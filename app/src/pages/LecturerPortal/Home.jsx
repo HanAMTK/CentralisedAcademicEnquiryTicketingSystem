@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/css";
 import {
@@ -13,45 +13,50 @@ import {
   ChevronDown,
   Mail,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
 
+const API_BASE = "https://w25037936.nuwebspace.co.uk/KV6027/CAETS/api/tickets/index.php";
+
 const CATEGORY_LABELS = {
-  module_content: "Module Content",
-  gradebook: "Gradebook",
-  assessment_submission: "Assessment & Submission",
-  other: "Other",
+  "Module Content": "Module Content",
+  "Gradebook": "Gradebook",
+  "Assessment & Submission": "Assessment & Submission",
+  "Other": "Other",
 };
 
 const getStatusLabel = (status) => {
   const labels = {
-    open: "Open",
-    in_progress: "In Progress",
-    awaiting_response: "Awaiting Response",
-    resolved: "Resolved",
-    closed: "Closed",
+    Open: "Open",
+    "In Progress": "In Progress",
+    "Awaiting Response": "Awaiting Response",
+    Resolved: "Resolved",
+    Closed: "Closed",
   };
   return labels[status] || status;
 };
 
 const getUrgencyStyle = (urgency) => {
   const map = {
-    critical: css`background-color: #fee2e2; color: #991b1b;`,
-    high: css`background-color: #ffedd5; color: #9a3412;`,
-    medium: css`background-color: #fef9c3; color: #854d0e;`,
-    low: css`background-color: #dbeafe; color: #1e40af;`,
+    Critical: css`background-color: #fee2e2; color: #991b1b;`,
+    High: css`background-color: #ffedd5; color: #9a3412;`,
+    Medium: css`background-color: #fef9c3; color: #854d0e;`,
+    Low: css`background-color: #dbeafe; color: #1e40af;`,
   };
-  return map[urgency] || map.low;
+  return map[urgency] || map.Low;
 };
 
 const hasUnreadReplies = (ticket, portal) => {
-  // Placeholder — replace with real logic when backend is ready
   return false;
 };
 
-const LecturerPortalHome = ({ tickets = [] }) => {
+const LecturerPortalHome = () => {
   const navigate = useNavigate();
+
+  // Data state
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Filter & search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,6 +64,9 @@ const LecturerPortalHome = ({ tickets = [] }) => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterUrgency, setFilterUrgency] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState("active");
 
   // Sort state
   const [sortColumn, setSortColumn] = useState("updated");
@@ -68,50 +76,88 @@ const LecturerPortalHome = ({ tickets = [] }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // Fetch tickets
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const res = await fetch(`${API_BASE}?action=lecturer-tickets`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok && data.tickets) {
+          setTickets(data.tickets);
+        }
+      } catch {
+        console.error("Failed to fetch tickets");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  }, []);
+
   // Unique modules for filter dropdown
   const uniqueModules = useMemo(() => {
-    const modules = tickets.map((t) => t.module).filter(Boolean);
+    const modules = tickets.map((t) => `${t.module_code} - ${t.module_name}`).filter(Boolean);
     return [...new Set(modules)];
   }, [tickets]);
 
+  // Tab counts
+  const activeCount = tickets.filter(
+    (t) => t.status !== "Resolved" && t.status !== "Closed"
+  ).length;
+  const pastCount = tickets.filter(
+    (t) => t.status === "Resolved" || t.status === "Closed"
+  ).length;
+
+  // Tickets by tab
+  const tabTickets = useMemo(() => {
+    if (activeTab === "active") {
+      return tickets.filter((t) => t.status !== "Resolved" && t.status !== "Closed");
+    }
+    return tickets.filter((t) => t.status === "Resolved" || t.status === "Closed");
+  }, [tickets, activeTab]);
+
   // Filtered tickets
   const filteredTickets = useMemo(() => {
-    return tickets.filter((ticket) => {
+    return tabTickets.filter((ticket) => {
+      const moduleFull = `${ticket.module_code} - ${ticket.module_name}`;
+
       const matchesSearch =
         !searchQuery ||
-        ticket.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.ticket_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (ticket.description || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesModule = filterModule === "all" || ticket.module === filterModule;
+      const matchesModule = filterModule === "all" || moduleFull === filterModule;
       const matchesCategory = filterCategory === "all" || ticket.category === filterCategory;
       const matchesUrgency = filterUrgency === "all" || ticket.urgency === filterUrgency;
       const matchesStatus = filterStatus === "all" || ticket.status === filterStatus;
 
       return matchesSearch && matchesModule && matchesCategory && matchesUrgency && matchesStatus;
     });
-  }, [tickets, searchQuery, filterModule, filterCategory, filterUrgency, filterStatus]);
+  }, [tabTickets, searchQuery, filterModule, filterCategory, filterUrgency, filterStatus]);
 
   // Sorted tickets
   const sortedTickets = useMemo(() => {
     const sorted = [...filteredTickets].sort((a, b) => {
       let valA, valB;
       switch (sortColumn) {
-        case "id": valA = a.id; valB = b.id; break;
-        case "title": valA = a.title; valB = b.title; break;
-        case "module": valA = a.module || ""; valB = b.module || ""; break;
+        case "id": valA = a.ticket_number; valB = b.ticket_number; break;
+        case "title": valA = a.subject; valB = b.subject; break;
+        case "module": valA = a.module_code; valB = b.module_code; break;
         case "category": valA = a.category; valB = b.category; break;
         case "urgency":
-          const urgencyOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+          const urgencyOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 };
           valA = urgencyOrder[a.urgency] ?? 4;
           valB = urgencyOrder[b.urgency] ?? 4;
           break;
         case "status": valA = a.status; valB = b.status; break;
         case "updated":
-          valA = new Date(a.updatedAt).getTime();
-          valB = new Date(b.updatedAt).getTime();
+          valA = new Date(a.updated_at).getTime();
+          valB = new Date(b.updated_at).getTime();
           break;
-        default: valA = a.id; valB = b.id;
+        default: valA = a.ticket_number; valB = b.ticket_number;
       }
       if (valA < valB) return sortDirection === "asc" ? -1 : 1;
       if (valA > valB) return sortDirection === "asc" ? 1 : -1;
@@ -137,6 +183,16 @@ const LecturerPortalHome = ({ tickets = [] }) => {
     }
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    setSearchQuery("");
+    setFilterModule("all");
+    setFilterCategory("all");
+    setFilterUrgency("all");
+    setFilterStatus("all");
+  };
+
   const SortIcon = ({ column }) => {
     if (sortColumn !== column) return <ChevronUp className={s.sortIconInactive} />;
     return sortDirection === "asc" ? (
@@ -145,6 +201,10 @@ const LecturerPortalHome = ({ tickets = [] }) => {
       <ChevronDown className={s.sortIconActive} />
     );
   };
+
+  if (loading) {
+    return <div className={s.loadingPage}>Loading tickets...</div>;
+  }
 
   return (
     <div className={s.pageWrapper}>
@@ -174,6 +234,24 @@ const LecturerPortalHome = ({ tickets = [] }) => {
             <h2 className={s.sectionHeading}>
               Assigned Tickets ({filteredTickets.length})
             </h2>
+          </div>
+
+          {/* Tabs */}
+          <div className={s.tabWrapper}>
+            <div className={s.tabGroup}>
+              <button
+                onClick={() => handleTabChange("active")}
+                className={activeTab === "active" ? s.tabActive : s.tabInactive}
+              >
+                Active ({activeCount})
+              </button>
+              <button
+                onClick={() => handleTabChange("past")}
+                className={activeTab === "past" ? s.tabActive : s.tabInactive}
+              >
+                Past ({pastCount})
+              </button>
+            </div>
           </div>
 
           {/* Search & Filters */}
@@ -226,10 +304,10 @@ const LecturerPortalHome = ({ tickets = [] }) => {
                   className={s.select}
                 >
                   <option value="all">All Categories</option>
-                  <option value="module_content">Module Content</option>
-                  <option value="gradebook">Gradebook</option>
-                  <option value="assessment_submission">Assessment & Submission</option>
-                  <option value="other">Other</option>
+                  <option value="Module Content">Module Content</option>
+                  <option value="Gradebook">Gradebook</option>
+                  <option value="Assessment & Submission">Assessment & Submission</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
@@ -242,10 +320,10 @@ const LecturerPortalHome = ({ tickets = [] }) => {
                   className={s.select}
                 >
                   <option value="all">All Urgency</option>
-                  <option value="critical">Critical</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
                 </select>
               </div>
             </div>
@@ -259,11 +337,11 @@ const LecturerPortalHome = ({ tickets = [] }) => {
                 className={s.statusSelect}
               >
                 <option value="all">All Status</option>
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="awaiting_response">Awaiting Response</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Awaiting Response">Awaiting Response</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
               </select>
             </div>
           </div>
@@ -312,8 +390,8 @@ const LecturerPortalHome = ({ tickets = [] }) => {
                       const isUnread = hasUnreadReplies(ticket, "lecturer");
                       return (
                         <tr
-                          key={ticket.id}
-                          onClick={() => navigate(`/lecturer/ticket/${ticket.id}`)}
+                          key={ticket.ticket_id}
+                          onClick={() => navigate(`/lecturer/ticket/${ticket.ticket_id}`)}
                           className={isUnread ? s.rowUnread : s.row}
                         >
                           <td className={s.td}>
@@ -322,14 +400,14 @@ const LecturerPortalHome = ({ tickets = [] }) => {
                                 <Mail className={s.unreadIcon} title="Unread replies" />
                               )}
                               <span className={isUnread ? s.ticketIdBold : s.ticketIdNormal}>
-                                {ticket.id}
+                                {ticket.ticket_number}
                               </span>
                             </div>
                           </td>
                           <td className={s.td}>
                             <div className={s.titleCell}>
                               <span className={isUnread ? s.titleBold : s.titleNormal}>
-                                {ticket.title}
+                                {ticket.subject}
                               </span>
                               {isUnread && (
                                 <span className={s.newReplyBadge}>
@@ -340,7 +418,7 @@ const LecturerPortalHome = ({ tickets = [] }) => {
                             </div>
                           </td>
                           <td className={s.td}>
-                            <span className={s.moduleText}>{ticket.module || "N/A"}</span>
+                            <span className={s.moduleText}>{ticket.module_code}</span>
                           </td>
                           <td className={s.td}>
                             <span className={s.categoryBadge}>
@@ -360,9 +438,7 @@ const LecturerPortalHome = ({ tickets = [] }) => {
                           <td className={s.td}>
                             <div className={s.updatedCell}>
                               <Clock className={s.smallIcon} />
-                              {formatDistanceToNow(new Date(ticket.updatedAt), {
-                                addSuffix: true,
-                              })}
+                              {format(new Date(ticket.updated_at), "dd MMM yyyy, HH:mm")}
                             </div>
                           </td>
                         </tr>
@@ -433,6 +509,13 @@ const s = {
     background-color: #f9fafb;
     overflow: hidden;
   `,
+  loadingPage: css`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #6b7280;
+  `,
   header: css`
     background-color: #ffffff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -501,6 +584,42 @@ const s = {
     font-weight: 600;
     color: #111827;
     margin: 0;
+  `,
+
+  /* Tabs */
+  tabWrapper: css`
+    margin-bottom: 1.5rem;
+  `,
+  tabGroup: css`
+    display: inline-flex;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    background-color: #ffffff;
+    padding: 0.25rem;
+  `,
+  tabActive: css`
+    padding: 0.375rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    background-color: #4f46e5;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+  `,
+  tabInactive: css`
+    padding: 0.375rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    background: none;
+    color: #374151;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    &:hover { color: #111827; }
   `,
 
   /* Filters */

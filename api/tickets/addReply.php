@@ -86,17 +86,19 @@ function addReply() {
         $result->execute($param);
         $replyId = $dbConnection->lastInsertId();
 
-        // Auto-update status to "Awaiting Response"
+        // Auto-update status based on who replied
         $oldStatus = $ticket['status'];
-        if ($userRole === 'student' && $oldStatus !== 'Awaiting Response') {
+        $newStatus = null;
+
+        if ($userRole === 'lecturer' && ($oldStatus === 'In Progress' || $oldStatus === 'Open')) {
+            // Lecturer replied → awaiting student's response
             $newStatus = 'Awaiting Response';
-        } elseif ($userRole === 'lecturer' && $oldStatus !== 'Awaiting Response') {
-            $newStatus = 'Awaiting Response';
-        } else {
-            $newStatus = null;
+        } elseif ($userRole === 'student' && $oldStatus === 'Awaiting Response') {
+            // Student replied → back to lecturer's court
+            $newStatus = 'In Progress';
         }
 
-        if ($newStatus && $newStatus !== $oldStatus) {
+        if ($newStatus !== null) {
             // Update ticket status
             $sqlQuery = "UPDATE tickets SET status = :status, updated_at = NOW() WHERE ticket_id = :ticket_id";
             $param = [':status' => $newStatus, ':ticket_id' => $ticketId];
@@ -123,6 +125,30 @@ function addReply() {
         }
 
         $dbConnection->commit();
+
+        // Notify the other party
+        require "../notifications/createNotification.php";
+        $senderName = $_SESSION['firstName'] . ' ' . $_SESSION['lastName'];
+
+        if ($userRole === 'student') {
+            // Notify the lecturer
+            createNotification(
+                $dbConnection,
+                $ticket['assigned_lecturer_id'],
+                $ticketId,
+                'new_reply',
+                "{$senderName} replied to ticket #{$ticketId}"
+            );
+        } elseif ($userRole === 'lecturer') {
+            // Notify the student
+            createNotification(
+                $dbConnection,
+                $ticket['student_id'],
+                $ticketId,
+                'new_reply',
+                "{$senderName} replied to your ticket"
+            );
+        }
 
         echo json_encode([
             "message"  => "Reply added successfully",

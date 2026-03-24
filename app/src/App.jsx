@@ -14,6 +14,7 @@ import CreateTicket from "./pages/StudentPortal/CreateTicket.jsx";
 import ViewAllTickets from "./pages/StudentPortal/ViewAllTickets.jsx";
 import TicketDetail from "./pages/StudentPortal/TicketDetail.jsx";
 import LecturerPortalHome from "./pages/LecturerPortal/Home.jsx";
+import LecturerTicketDetail from "./pages/LecturerPortal/TicketDetail.jsx";
 
 function App() {
   return (
@@ -66,6 +67,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["lecturer"]}>
                 <LecturerPortalHome />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lecturer/ticket/:id"
+            element={
+              <ProtectedRoute allowedRoles={["lecturer"]}>
+                <LecturerTicketDetail />
               </ProtectedRoute>
             }
           />

@@ -144,6 +144,16 @@ function processCreateTicket($input) {
         $result = $dbConnection->prepare($sqlQuery);
         $result->execute($param);
 
+        // Notify assigned lecturer
+        require "../notifications/createNotification.php";
+        createNotification(
+            $dbConnection,
+            $assignedLecturerId,
+            $ticketId,
+            'ticket_assigned',
+            "New ticket {$ticketNumber}: {$subject}"
+        );
+
         return [
             "ticket_id"     => (int) $ticketId,
             "ticket_number" => $ticketNumber,
