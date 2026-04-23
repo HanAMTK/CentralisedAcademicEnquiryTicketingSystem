@@ -10,10 +10,12 @@ import {
   Info,
   MessageSquare,
   Send,
+  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
+import RatingCard from "../../components/RatingCard";
 
 const API_BASE = "https://w25037936.nuwebspace.co.uk/KV6027/CAETS/api/tickets/index.php";
 
@@ -178,6 +180,8 @@ const TicketDetail = () => {
     ? `${ticket.lecturer_first_name} ${ticket.lecturer_last_name}`
     : "Not assigned";
 
+  const isLocked = ticket.status === "Resolved" || ticket.status === "Closed";
+
   return (
     <div className={s.pageWrapper}>
       {/* Header */}
@@ -270,6 +274,11 @@ const TicketDetail = () => {
             </div>
           </div>
 
+          <RatingCard
+            ticketId={ticket.ticket_id}
+            ticketStatus={ticket.status}
+          />
+
           {/* Ticket Details + Conversation */}
           <div className={s.detailCard}>
             {/* Subject & Description */}
@@ -302,8 +311,8 @@ const TicketDetail = () => {
                         item.type === "status"
                           ? s.timelineStatus
                           : item.data.authorRole === "lecturer"
-                          ? s.timelineLecturer
-                          : s.timelineStudent
+                            ? s.timelineLecturer
+                            : s.timelineStudent
                       }
                     >
                       <div className={s.timelineTop}>
@@ -313,8 +322,8 @@ const TicketDetail = () => {
                               item.type === "status"
                                 ? s.avatarStatus
                                 : item.data.authorRole === "lecturer"
-                                ? s.avatarLecturer
-                                : s.avatarStudent
+                                  ? s.avatarLecturer
+                                  : s.avatarStudent
                             }
                           >
                             <User className={s.avatarIcon} />
@@ -343,8 +352,8 @@ const TicketDetail = () => {
               )}
             </div>
 
-            {/* Reply Form */}
-            {ticket.status !== "Closed" && (
+            {/* Reply Form — only when ticket is active (not Resolved, not Closed) */}
+            {!isLocked && (
               <div className={s.replySection}>
                 <form onSubmit={handleSubmitReply}>
                   <label htmlFor="reply" className={s.replyLabel}>
@@ -369,6 +378,21 @@ const TicketDetail = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            )}
+
+            {/* Locked notice for Resolved/Closed tickets */}
+            {isLocked && (
+              <div className={s.lockedNotice}>
+                <Lock className={s.lockedIcon} />
+                <div>
+                  <p className={s.lockedTitle}>
+                    This ticket is {ticket.status.toLowerCase()}
+                  </p>
+                  <p className={s.lockedText}>
+                    No further replies can be added. The conversation is now read-only.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -746,5 +770,34 @@ const s = {
   replyButtonIcon: css`
     width: 1rem;
     height: 1rem;
+  `,
+
+  /* Locked Notice */
+  lockedNotice: css`
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    border-radius: 0 0 0.75rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+  `,
+  lockedIcon: css`
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #6b7280;
+    flex-shrink: 0;
+  `,
+  lockedTitle: css`
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 0.125rem 0;
+    text-transform: capitalize;
+  `,
+  lockedText: css`
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin: 0;
   `,
 };

@@ -13,10 +13,12 @@ import {
   CheckCircle,
   XCircle,
   PlayCircle,
+  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
+import RatingView from "../../components/RatingView";
 
 const API_BASE = "https://w25037936.nuwebspace.co.uk/KV6027/CAETS/api/tickets/index.php";
 
@@ -217,10 +219,11 @@ const LecturerTicketDetail = () => {
     ? `${ticket.lecturer_first_name} ${ticket.lecturer_last_name}`
     : "Not assigned";
 
+  const isLocked = ticket.status === "Resolved" || ticket.status === "Closed";
   const canClaim = ticket.status === "Open";
-  const canReply = ticket.status !== "Closed" && ticket.status !== "Open";
+  const canReply = !isLocked && ticket.status !== "Open";
   const canResolve = ticket.status === "In Progress" || ticket.status === "Awaiting Response";
-  const canClose = ticket.status === "Resolved" || ticket.status === "In Progress" || ticket.status === "Awaiting Response";
+  const canClose = ticket.status === "In Progress" || ticket.status === "Awaiting Response";
 
   return (
     <div className={s.pageWrapper}>
@@ -250,39 +253,41 @@ const LecturerTicketDetail = () => {
       {/* Scrollable Content */}
       <div className={s.scrollArea}>
         <div className={s.contentWrapper}>
-          {/* Action Bar */}
-          <div className={s.actionBar}>
-            {canClaim && (
-              <button
-                onClick={handleClaim}
-                disabled={actionLoading === "claim"}
-                className={s.claimButton}
-              >
-                <PlayCircle className={s.actionIcon} />
-                {actionLoading === "claim" ? "Claiming..." : "Claim Ticket"}
-              </button>
-            )}
-            {canResolve && (
-              <button
-                onClick={() => handleStatusUpdate("Resolved")}
-                disabled={!!actionLoading}
-                className={s.resolveButton}
-              >
-                <CheckCircle className={s.actionIcon} />
-                {actionLoading === "Resolved" ? "Resolving..." : "Mark as Resolved"}
-              </button>
-            )}
-            {canClose && (
-              <button
-                onClick={() => handleStatusUpdate("Closed")}
-                disabled={!!actionLoading}
-                className={s.closeButton}
-              >
-                <XCircle className={s.actionIcon} />
-                {actionLoading === "Closed" ? "Closing..." : "Close Ticket"}
-              </button>
-            )}
-          </div>
+          {/* Action Bar — hidden when ticket is locked */}
+          {(canClaim || canResolve || canClose) && (
+            <div className={s.actionBar}>
+              {canClaim && (
+                <button
+                  onClick={handleClaim}
+                  disabled={actionLoading === "claim"}
+                  className={s.claimButton}
+                >
+                  <PlayCircle className={s.actionIcon} />
+                  {actionLoading === "claim" ? "Claiming..." : "Claim Ticket"}
+                </button>
+              )}
+              {canResolve && (
+                <button
+                  onClick={() => handleStatusUpdate("Resolved")}
+                  disabled={!!actionLoading}
+                  className={s.resolveButton}
+                >
+                  <CheckCircle className={s.actionIcon} />
+                  {actionLoading === "Resolved" ? "Resolving..." : "Mark as Resolved"}
+                </button>
+              )}
+              {canClose && (
+                <button
+                  onClick={() => handleStatusUpdate("Closed")}
+                  disabled={!!actionLoading}
+                  className={s.closeButton}
+                >
+                  <XCircle className={s.actionIcon} />
+                  {actionLoading === "Closed" ? "Closing..." : "Close Ticket"}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Ticket Information Card */}
           <div className={s.infoCard}>
@@ -347,6 +352,12 @@ const LecturerTicketDetail = () => {
               </div>
             </div>
           </div>
+
+          {/* Student Rating (only shows when ticket is Resolved or Closed) */}
+          <RatingView
+            ticketId={ticket.ticket_id}
+            ticketStatus={ticket.status}
+          />
 
           {/* Ticket Details + Conversation */}
           <div className={s.detailCard}>
@@ -425,7 +436,7 @@ const LecturerTicketDetail = () => {
               )}
             </div>
 
-            {/* Reply Form — only after claiming */}
+            {/* Reply Form — only when ticket is active (not Open, not Resolved, not Closed) */}
             {canReply && (
               <div className={s.replySection}>
                 <form onSubmit={handleSubmitReply}>
@@ -468,6 +479,21 @@ const LecturerTicketDetail = () => {
                   <PlayCircle className={s.actionIcon} />
                   {actionLoading === "claim" ? "Claiming..." : "Claim Ticket"}
                 </button>
+              </div>
+            )}
+
+            {/* Locked notice for Resolved/Closed tickets */}
+            {isLocked && (
+              <div className={s.lockedNotice}>
+                <Lock className={s.lockedIcon} />
+                <div>
+                  <p className={s.lockedTitle}>
+                    This ticket is {ticket.status.toLowerCase()}
+                  </p>
+                  <p className={s.lockedText}>
+                    No further replies can be added. The conversation is now read-only.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -918,6 +944,35 @@ const s = {
     color: #3730a3;
     font-size: 0.875rem;
     font-weight: 500;
+    margin: 0;
+  `,
+
+  /* Locked Notice */
+  lockedNotice: css`
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    border-radius: 0 0 0.75rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+  `,
+  lockedIcon: css`
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #6b7280;
+    flex-shrink: 0;
+  `,
+  lockedTitle: css`
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 0.125rem 0;
+    text-transform: capitalize;
+  `,
+  lockedText: css`
+    font-size: 0.8125rem;
+    color: #6b7280;
     margin: 0;
   `,
 };
