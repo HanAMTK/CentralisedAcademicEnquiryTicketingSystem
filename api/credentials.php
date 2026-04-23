@@ -1,7 +1,7 @@
 <?php
 
 $username = "w25037936";
-$password = "IOUgAX%hci0V";
+$password = "t16WK0I1";
  
 
 $host = "nuwebspace_db";

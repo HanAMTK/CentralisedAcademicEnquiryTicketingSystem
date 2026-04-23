@@ -33,7 +33,7 @@ const ChangePassword = () => {
 
       // Redirect to portal after short delay
       setTimeout(() => {
-        const path = user.role === "lecturer" ? "/lecturer" : "/student";
+        const path = user.role === "lecturer" ? "/lecturer" : user.role === "admin" ? "/admin" : "/student";
         navigate(path, { replace: true });
       }, 1500);
     } catch (err) {

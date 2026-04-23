@@ -31,8 +31,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   // Role check — if allowedRoles is provided, verify user has permission
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Redirect to their own portal
-    const portalPath = user.role === "lecturer" ? "/lecturer" : "/student";
+    const portalPath = user.role === "lecturer" ? "/lecturer" : user.role === "admin" ? "/admin" : "/student";
     return <Navigate to={portalPath} replace />;
   }
 

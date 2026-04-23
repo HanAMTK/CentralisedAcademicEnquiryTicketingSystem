@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/css";
 import {
-  ArrowLeft,
   Filter,
   Search,
   Inbox,
@@ -212,9 +211,6 @@ const LecturerPortalHome = () => {
       <div className={s.header}>
         <div className={s.headerInner}>
           <div className={s.headerLeft}>
-            <button onClick={() => navigate("/")} className={s.backButton}>
-              <ArrowLeft className={s.backIcon} />
-            </button>
             <div>
               <h1 className={s.pageTitle}>Lecturer Portal</h1>
             </div>

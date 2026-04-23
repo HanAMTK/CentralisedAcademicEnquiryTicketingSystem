@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/css";
-import { ArrowLeft, PlusCircle, Ticket, Clock, MessageSquare } from "lucide-react";
+import { PlusCircle, Ticket, Clock, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
@@ -73,9 +73,6 @@ const StudentPortalHome = () => {
       <div className={s.header}>
         <div className={s.headerInner}>
           <div className={s.headerLeft}>
-            <button onClick={() => navigate("/")} className={s.backButton}>
-              <ArrowLeft className={s.backIcon} />
-            </button>
             <div>
               <h1 className={s.pageTitle}>Student Portal</h1>
             </div>

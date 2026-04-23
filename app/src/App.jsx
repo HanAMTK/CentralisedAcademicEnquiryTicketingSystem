@@ -15,6 +15,12 @@ import ViewAllTickets from "./pages/StudentPortal/ViewAllTickets.jsx";
 import TicketDetail from "./pages/StudentPortal/TicketDetail.jsx";
 import LecturerPortalHome from "./pages/LecturerPortal/Home.jsx";
 import LecturerTicketDetail from "./pages/LecturerPortal/TicketDetail.jsx";
+import Profile from "./pages/Shared/Profile.jsx";
+
+// Admin pages
+import AdminDashboard from "./pages/AdminPortal/Dashboard.jsx";
+import AdminUserManagement from "./pages/AdminPortal/UserManagement.jsx";
+import AdminModuleManagement from "./pages/AdminPortal/ModuleManagement.jsx";
 
 function App() {
   return (
@@ -60,6 +66,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/student/profile"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <Profile portal="student" />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected routes — Lecturer */}
           <Route
@@ -75,6 +89,48 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["lecturer"]}>
                 <LecturerTicketDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lecturer/profile"
+            element={
+              <ProtectedRoute allowedRoles={["lecturer"]}>
+                <Profile portal="lecturer" />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected routes — Admin */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminUserManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/modules"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminModuleManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/profile"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <Profile portal="admin" />
               </ProtectedRoute>
             }
           />

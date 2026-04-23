@@ -15,7 +15,7 @@ const Login = () => {
 
   // If already logged in, redirect
   if (user && !user.must_change_password) {
-    const path = user.role === "lecturer" ? "/lecturer" : "/student";
+    const path = user.role === "lecturer" ? "/lecturer" : user.role === "admin" ? "/admin" : "/student";
     navigate(path, { replace: true });
     return null;
   }
@@ -31,7 +31,7 @@ const Login = () => {
       if (loggedInUser.must_change_password) {
         navigate("/change-password", { replace: true });
       } else {
-        const path = loggedInUser.role === "lecturer" ? "/lecturer" : "/student";
+        const path = loggedInUser.role === "lecturer" ? "/lecturer" : loggedInUser.role === "admin" ? "/admin" : "/student";
         navigate(path, { replace: true });
       }
     } catch (err) {
@@ -46,7 +46,10 @@ const Login = () => {
       <div className={s.card}>
         {/* Header */}
         <div className={s.header}>
-          <h1 className={s.title}>Welcome</h1>
+          <div className={s.logoCircle}>
+            <LogIn className={s.logoIcon} />
+          </div>
+          <h1 className={s.title}>Welcome Back</h1>
           <p className={s.subtitle}>Sign in to the Academic Enquiry System</p>
         </div>
 
