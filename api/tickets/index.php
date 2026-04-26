@@ -22,6 +22,7 @@ require "getTicketDetail.php";
 require "addReply.php";
 require "claimTicket.php";
 require "updateTicketStatus.php";
+require "getLecturerDashboard.php";
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -60,6 +61,9 @@ switch ($_GET['action']) {
         break;
     case 'update-status':
         updateTicketStatus();
+        break;
+    case 'lecturer-dashboard':
+        getLecturerDashboard();
         break;
     default:
         http_response_code(400);

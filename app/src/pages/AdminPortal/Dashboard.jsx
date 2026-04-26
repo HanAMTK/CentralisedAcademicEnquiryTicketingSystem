@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/css";
-import { Users, BookOpen, Ticket, BarChart3 } from "lucide-react";
+import { Users, BookOpen, Ticket, BarChart3, TrendingUp } from "lucide-react";
 import UserMenu from "../../components/UserMenu";
 
 const API_BASE = "https://w25037936.nuwebspace.co.uk/KV6027/CAETS/api/admin/index.php";
@@ -32,7 +32,13 @@ const AdminDashboard = () => {
       <div className={s.header}>
         <div className={s.headerInner}>
           <h1 className={s.pageTitle}>Admin Portal</h1>
-          <UserMenu portal="admin" />
+          <div className={s.headerRight}>
+            <button onClick={() => navigate("/admin/analytics")} className={s.analyticsButton}>
+              <TrendingUp className={s.analyticsButtonIcon} />
+              View Analytics
+            </button>
+            <UserMenu portal="admin" />
+          </div>
         </div>
       </div>
 
@@ -105,6 +111,12 @@ const AdminDashboard = () => {
               <h3 className={s.actionTitle}>Module Management</h3>
               <p className={s.actionDesc}>Create modules, assign lecturers</p>
             </button>
+
+            <button onClick={() => navigate("/admin/analytics")} className={s.actionCard}>
+              <TrendingUp className={s.actionIcon} />
+              <h3 className={s.actionTitle}>System Analytics</h3>
+              <p className={s.actionDesc}>View system-wide performance metrics and lecturer leaderboard</p>
+            </button>
           </div>
         </div>
       </div>
@@ -144,6 +156,30 @@ const s = {
     font-weight: 700;
     color: #111827;
     margin: 0;
+  `,
+  headerRight: css`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  `,
+  analyticsButton: css`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #4f46e5;
+    color: #ffffff;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    &:hover { background-color: #4338ca; }
+  `,
+  analyticsButtonIcon: css`
+    width: 1rem;
+    height: 1rem;
   `,
   scrollArea: css`
     flex: 1;
@@ -211,6 +247,7 @@ const s = {
     grid-template-columns: 1fr;
     gap: 1.5rem;
     @media (min-width: 768px) { grid-template-columns: 1fr 1fr; }
+    @media (min-width: 1024px) { grid-template-columns: 1fr 1fr 1fr; }
   `,
   actionCard: css`
     background-color: #ffffff;

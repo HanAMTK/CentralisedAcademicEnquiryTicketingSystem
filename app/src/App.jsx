@@ -15,10 +15,12 @@ import ViewAllTickets from "./pages/StudentPortal/ViewAllTickets.jsx";
 import TicketDetail from "./pages/StudentPortal/TicketDetail.jsx";
 import LecturerPortalHome from "./pages/LecturerPortal/Home.jsx";
 import LecturerTicketDetail from "./pages/LecturerPortal/TicketDetail.jsx";
+import LecturerDashboard from "./pages/LecturerPortal/Dashboard.jsx";
 import Profile from "./pages/Shared/Profile.jsx";
 
 // Admin pages
-import AdminDashboard from "./pages/AdminPortal/Dashboard.jsx";
+import AdminHome from "./pages/AdminPortal/Dashboard.jsx";
+import AdminAnalytics from "./pages/AdminPortal/Analytics.jsx";
 import AdminUserManagement from "./pages/AdminPortal/UserManagement.jsx";
 import AdminModuleManagement from "./pages/AdminPortal/ModuleManagement.jsx";
 
@@ -85,6 +87,14 @@ function App() {
             }
           />
           <Route
+            path="/lecturer/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["lecturer"]}>
+                <LecturerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/lecturer/ticket/:id"
             element={
               <ProtectedRoute allowedRoles={["lecturer"]}>
@@ -106,7 +116,15 @@ function App() {
             path="/admin"
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <AdminDashboard />
+                <AdminHome />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminAnalytics />
               </ProtectedRoute>
             }
           />
