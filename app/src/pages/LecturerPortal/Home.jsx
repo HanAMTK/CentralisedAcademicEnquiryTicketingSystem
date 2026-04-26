@@ -15,6 +15,7 @@ import {
 import { format } from "date-fns";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
+import SLABadge from "../../components/SLABadge";
 
 const API_BASE = "https://w25037936.nuwebspace.co.uk/KV6027/CAETS/api/tickets/index.php";
 
@@ -50,12 +51,49 @@ const hasUnreadReplies = (ticket, portal) => {
   return false;
 };
 
-const LecturerPortalHome = () => {
+/**
+ * Computes SLA status for a ticket. Mirrors logic in SLABadge.jsx.
+ * Returns: 'met' | 'breached' | 'on_track' | 'due_soon' | 'overdue' | null
+ */
+const computeSlaStatus = (ticket, now) => {
+  if (!ticket.sla_deadline) return null;
+
+  const deadline = new Date(ticket.sla_deadline);
+  const responded = ticket.first_response_at ? new Date(ticket.first_response_at) : null;
+
+  if (responded) {
+    return responded <= deadline ? "met" : "breached";
+  }
+
+  const msRemaining = deadline - now;
+  if (msRemaining <= 0) return "overdue";
+
+  const dueSoonThreshold = 2 * 60 * 60 * 1000;
+  if (msRemaining < dueSoonThreshold) return "due_soon";
+  return "on_track";
+};
+
+const SLA_SORT_ORDER = {
+  overdue: 0,
+  due_soon: 1,
+  on_track: 2,
+  breached: 3,
+  met: 4,
+};
+
+const Home = () => {
   const navigate = useNavigate();
 
   // Data state
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Live clock for SLA calculations - re-renders every minute
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Filter & search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,6 +101,7 @@ const LecturerPortalHome = () => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterUrgency, setFilterUrgency] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterSla, setFilterSla] = useState("all");
 
   // Tab state
   const [activeTab, setActiveTab] = useState("active");
@@ -133,9 +172,28 @@ const LecturerPortalHome = () => {
       const matchesUrgency = filterUrgency === "all" || ticket.urgency === filterUrgency;
       const matchesStatus = filterStatus === "all" || ticket.status === filterStatus;
 
-      return matchesSearch && matchesModule && matchesCategory && matchesUrgency && matchesStatus;
+      const slaStatus = computeSlaStatus(ticket, now);
+      const matchesSla = filterSla === "all" || slaStatus === filterSla;
+
+      return (
+        matchesSearch &&
+        matchesModule &&
+        matchesCategory &&
+        matchesUrgency &&
+        matchesStatus &&
+        matchesSla
+      );
     });
-  }, [tabTickets, searchQuery, filterModule, filterCategory, filterUrgency, filterStatus]);
+  }, [
+    tabTickets,
+    searchQuery,
+    filterModule,
+    filterCategory,
+    filterUrgency,
+    filterStatus,
+    filterSla,
+    now,
+  ]);
 
   // Sorted tickets
   const sortedTickets = useMemo(() => {
@@ -152,6 +210,10 @@ const LecturerPortalHome = () => {
           valB = urgencyOrder[b.urgency] ?? 4;
           break;
         case "status": valA = a.status; valB = b.status; break;
+        case "sla":
+          valA = SLA_SORT_ORDER[computeSlaStatus(a, now)] ?? 99;
+          valB = SLA_SORT_ORDER[computeSlaStatus(b, now)] ?? 99;
+          break;
         case "updated":
           valA = new Date(a.updated_at).getTime();
           valB = new Date(b.updated_at).getTime();
@@ -163,7 +225,7 @@ const LecturerPortalHome = () => {
       return 0;
     });
     return sorted;
-  }, [filteredTickets, sortColumn, sortDirection]);
+  }, [filteredTickets, sortColumn, sortDirection, now]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(sortedTickets.length / itemsPerPage));
@@ -190,6 +252,7 @@ const LecturerPortalHome = () => {
     setFilterCategory("all");
     setFilterUrgency("all");
     setFilterStatus("all");
+    setFilterSla("all");
   };
 
   const SortIcon = ({ column }) => {
@@ -204,6 +267,18 @@ const LecturerPortalHome = () => {
   if (loading) {
     return <div className={s.loadingPage}>Loading tickets...</div>;
   }
+
+  // Build the column definitions - SLA column only shows on Active tab
+  const columns = [
+    { key: "id", label: "Ticket ID" },
+    { key: "title", label: "Title" },
+    { key: "module", label: "Module" },
+    { key: "category", label: "Category" },
+    { key: "urgency", label: "Urgency" },
+    { key: "status", label: "Status" },
+    ...(activeTab === "active" ? [{ key: "sla", label: "SLA" }] : []),
+    { key: "updated", label: "Last Updated" },
+  ];
 
   return (
     <div className={s.pageWrapper}>
@@ -324,21 +399,39 @@ const LecturerPortalHome = () => {
               </div>
             </div>
 
-            {/* Status Filter */}
-            <div className={s.statusRow}>
-              <label className={s.label}>Status</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-                className={s.statusSelect}
-              >
-                <option value="all">All Status</option>
-                <option value="Open">Open</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Awaiting Response">Awaiting Response</option>
-                <option value="Resolved">Resolved</option>
-                <option value="Closed">Closed</option>
-              </select>
+            {/* Status + SLA filters row */}
+            <div className={s.bottomFilterRow}>
+              <div className={s.bottomFilterCol}>
+                <label className={s.label}>Status</label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                  className={s.statusSelect}
+                >
+                  <option value="all">All Status</option>
+                  <option value="Open">Open</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Awaiting Response">Awaiting Response</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+
+              {activeTab === "active" && (
+                <div className={s.bottomFilterCol}>
+                  <label className={s.label}>SLA</label>
+                  <select
+                    value={filterSla}
+                    onChange={(e) => { setFilterSla(e.target.value); setCurrentPage(1); }}
+                    className={s.statusSelect}
+                  >
+                    <option value="all">All SLA</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="due_soon">Due Soon</option>
+                    <option value="on_track">On Track</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
@@ -349,7 +442,7 @@ const LecturerPortalHome = () => {
                 <Inbox className={s.emptyIcon} />
                 <p className={s.emptyTitle}>No tickets found</p>
                 <p className={s.emptySubtitle}>
-                  {searchQuery || filterStatus !== "all" || filterModule !== "all"
+                  {searchQuery || filterStatus !== "all" || filterModule !== "all" || filterSla !== "all"
                     ? "Try adjusting your filters"
                     : "You're all caught up!"}
                 </p>
@@ -359,15 +452,7 @@ const LecturerPortalHome = () => {
                 <table className={s.table}>
                   <thead className={s.thead}>
                     <tr>
-                      {[
-                        { key: "id", label: "Ticket ID" },
-                        { key: "title", label: "Title" },
-                        { key: "module", label: "Module" },
-                        { key: "category", label: "Category" },
-                        { key: "urgency", label: "Urgency" },
-                        { key: "status", label: "Status" },
-                        { key: "updated", label: "Last Updated" },
-                      ].map((col) => (
+                      {columns.map((col) => (
                         <th
                           key={col.key}
                           onClick={() => handleSort(col.key)}
@@ -431,6 +516,15 @@ const LecturerPortalHome = () => {
                               {getStatusLabel(ticket.status)}
                             </span>
                           </td>
+                          {activeTab === "active" && (
+                            <td className={s.td}>
+                              <SLABadge
+                                slaDeadline={ticket.sla_deadline}
+                                firstResponseAt={ticket.first_response_at}
+                                variant="compact"
+                              />
+                            </td>
+                          )}
                           <td className={s.td}>
                             <div className={s.updatedCell}>
                               <Clock className={s.smallIcon} />
@@ -492,7 +586,7 @@ const LecturerPortalHome = () => {
   );
 };
 
-export default LecturerPortalHome;
+export default Home;
 
 /* ========================
    Styles
@@ -533,20 +627,6 @@ const s = {
     display: flex;
     align-items: center;
     gap: 1rem;
-  `,
-  backButton: css`
-    padding: 0.5rem;
-    border: none;
-    background: none;
-    cursor: pointer;
-    border-radius: 0.5rem;
-    transition: background-color 0.2s;
-    &:hover { background-color: #f3f4f6; }
-  `,
-  backIcon: css`
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #4b5563;
   `,
   pageTitle: css`
     font-size: 1.875rem;
@@ -705,8 +785,16 @@ const s = {
       box-shadow: 0 0 0 2px #6366f1;
     }
   `,
-  statusRow: css`
+  bottomFilterRow: css`
     margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  `,
+  bottomFilterCol: css`
+    flex: 1;
+    min-width: 12rem;
+    max-width: 16rem;
   `,
   statusSelect: css`
     width: 100%;
@@ -717,9 +805,6 @@ const s = {
     outline: none;
     background-color: #ffffff;
     box-sizing: border-box;
-    @media (min-width: 768px) {
-      width: 16rem;
-    }
     &:focus {
       border-color: transparent;
       box-shadow: 0 0 0 2px #6366f1;

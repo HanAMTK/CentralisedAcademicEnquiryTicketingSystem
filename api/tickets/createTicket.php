@@ -5,6 +5,8 @@
 // Called via: index.php?action=create (POST)
 // ============================================
 
+require_once "slaHelper.php";
+
 function validateTicketInput($input) {
     if (!isset($input['subject']) || empty(trim($input['subject']))) {
         http_response_code(400);
@@ -116,18 +118,23 @@ function processCreateTicket($input) {
         // Auto-assign to the module's lecturer
         $assignedLecturerId = $module['lecturer_id'];
 
+        // Calculate SLA deadline based on urgency
+        $createdAt = date('Y-m-d H:i:s');
+        $slaDeadline = calculateSlaDeadline($createdAt, $urgency);
+
         // Insert ticket
-        $sqlQuery = "INSERT INTO tickets (ticket_number, subject, description, category, module_id, urgency, student_id, assigned_lecturer_id, status)
-                     VALUES (:ticket_number, :subject, :description, :category, :module_id, :urgency, :student_id, :assigned_lecturer_id, 'Open')";
+        $sqlQuery = "INSERT INTO tickets (ticket_number, subject, description, category, module_id, urgency, student_id, assigned_lecturer_id, status, sla_deadline)
+                     VALUES (:ticket_number, :subject, :description, :category, :module_id, :urgency, :student_id, :assigned_lecturer_id, 'Open', :sla_deadline)";
         $param = [
-            ':ticket_number'       => $ticketNumber,
-            ':subject'             => $subject,
-            ':description'         => $description,
-            ':category'            => $category,
-            ':module_id'           => $moduleId,
-            ':urgency'             => $urgency,
-            ':student_id'          => $studentId,
+            ':ticket_number'        => $ticketNumber,
+            ':subject'              => $subject,
+            ':description'          => $description,
+            ':category'             => $category,
+            ':module_id'            => $moduleId,
+            ':urgency'              => $urgency,
+            ':student_id'           => $studentId,
             ':assigned_lecturer_id' => $assignedLecturerId,
+            ':sla_deadline'         => $slaDeadline,
         ];
         $result = $dbConnection->prepare($sqlQuery);
         $result->execute($param);
@@ -162,6 +169,7 @@ function processCreateTicket($input) {
             "module"        => $module['module_code'] . " - " . $module['module_name'],
             "urgency"       => $urgency,
             "status"        => "Open",
+            "sla_deadline"  => $slaDeadline,
         ];
 
     } catch (PDOException $e) {

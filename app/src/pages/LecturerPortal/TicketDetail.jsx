@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
 import RatingView from "../../components/RatingView";
+import SLABadge from "../../components/SLABadge";
 
 const API_BASE = "https://w25037936.nuwebspace.co.uk/KV6027/CAETS/api/tickets/index.php";
 
@@ -52,7 +53,7 @@ const urgencyColors = {
   Low: css`background-color: #dbeafe; color: #1e40af;`,
 };
 
-const LecturerTicketDetail = () => {
+const TicketDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -253,7 +254,7 @@ const LecturerTicketDetail = () => {
       {/* Scrollable Content */}
       <div className={s.scrollArea}>
         <div className={s.contentWrapper}>
-          {/* Action Bar — hidden when ticket is locked */}
+          {/* Action Bar — only when there are actions to take */}
           {(canClaim || canResolve || canClose) && (
             <div className={s.actionBar}>
               {canClaim && (
@@ -287,6 +288,15 @@ const LecturerTicketDetail = () => {
                 </button>
               )}
             </div>
+          )}
+
+          {/* SLA Card — only on active tickets with a deadline set */}
+          {!isLocked && ticket.sla_deadline && (
+            <SLABadge
+              slaDeadline={ticket.sla_deadline}
+              firstResponseAt={ticket.first_response_at}
+              variant="detail"
+            />
           )}
 
           {/* Ticket Information Card */}
@@ -503,7 +513,7 @@ const LecturerTicketDetail = () => {
   );
 };
 
-export default LecturerTicketDetail;
+export default TicketDetail;
 
 /* ========================
    Styles

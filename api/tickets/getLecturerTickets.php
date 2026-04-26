@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // getLecturerTickets.php
-// Returns tickets assigned to the logged-in lecturer
+// Returns tickets assigned to the logged-in lecturer (with SLA fields)
 // Called via: index.php?action=lecturer-tickets (GET)
 // ============================================
 
@@ -24,6 +24,7 @@ function getLecturerTickets() {
 
     $sqlQuery = "SELECT t.ticket_id, t.ticket_number, t.subject, t.description, t.category,
                         t.urgency, t.status, t.created_at, t.updated_at,
+                        t.sla_deadline, t.first_response_at,
                         m.module_code, m.module_name,
                         s.first_name AS student_first_name, s.last_name AS student_last_name,
                         (SELECT COUNT(*) FROM ticket_replies tr WHERE tr.ticket_id = t.ticket_id) AS reply_count

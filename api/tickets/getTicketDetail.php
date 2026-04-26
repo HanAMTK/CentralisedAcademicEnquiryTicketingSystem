@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // getTicketDetail.php
-// Returns ticket details, replies, and status history
+// Returns ticket details, replies, and status history (with SLA fields)
 // Called via: index.php?action=detail&id=TICKET_ID (GET)
 // ============================================
 
@@ -29,6 +29,7 @@ function getTicketDetail() {
         // Fetch ticket with module and lecturer info
         $sqlQuery = "SELECT t.ticket_id, t.ticket_number, t.subject, t.description, t.category,
                             t.urgency, t.status, t.created_at, t.updated_at, t.resolved_at, t.closed_at,
+                            t.sla_deadline, t.first_response_at,
                             m.module_code, m.module_name,
                             l.first_name AS lecturer_first_name, l.last_name AS lecturer_last_name
                      FROM tickets t

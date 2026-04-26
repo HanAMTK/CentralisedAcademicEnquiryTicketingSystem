@@ -2,6 +2,7 @@
 // ============================================
 // addReply.php
 // Adds a reply to a ticket and updates status
+// Records first_response_at when lecturer replies for the first time (SLA tracking)
 // Called via: index.php?action=reply (POST)
 // ============================================
 
@@ -39,8 +40,8 @@ function addReply() {
     try {
         $dbConnection = getConnection();
 
-        // Verify ticket exists and user has access
-        $sqlQuery = "SELECT ticket_id, status, student_id, assigned_lecturer_id 
+        // Verify ticket exists and user has access; pull first_response_at for SLA tracking
+        $sqlQuery = "SELECT ticket_id, status, student_id, assigned_lecturer_id, first_response_at
                      FROM tickets WHERE ticket_id = :ticket_id LIMIT 1";
         $param = [':ticket_id' => $ticketId];
         $result = $dbConnection->prepare($sqlQuery);
@@ -65,10 +66,10 @@ function addReply() {
             exit();
         }
 
-        // Cannot reply to closed tickets
-        if ($ticket['status'] === 'Closed') {
+        // Cannot reply to resolved or closed tickets
+        if ($ticket['status'] === 'Resolved' || $ticket['status'] === 'Closed') {
             http_response_code(400);
-            echo json_encode(["message" => "Cannot reply to a closed ticket"]);
+            echo json_encode(["message" => "Cannot reply to a resolved or closed ticket"]);
             exit();
         }
 
@@ -85,6 +86,15 @@ function addReply() {
         $result = $dbConnection->prepare($sqlQuery);
         $result->execute($param);
         $replyId = $dbConnection->lastInsertId();
+
+        // Record first_response_at if this is the lecturer's first reply on this ticket
+        $isFirstLecturerResponse = ($userRole === 'lecturer' && empty($ticket['first_response_at']));
+        if ($isFirstLecturerResponse) {
+            $sqlQuery = "UPDATE tickets SET first_response_at = NOW() WHERE ticket_id = :ticket_id";
+            $param = [':ticket_id' => $ticketId];
+            $result = $dbConnection->prepare($sqlQuery);
+            $result->execute($param);
+        }
 
         // Auto-update status based on who replied
         $oldStatus = $ticket['status'];
