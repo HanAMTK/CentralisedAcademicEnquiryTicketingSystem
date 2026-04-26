@@ -2,6 +2,7 @@
 // ============================================
 // submitRating.php
 // Submits or updates a rating for a ticket
+// Notifies the lecturer when a new rating is submitted
 // Called via: index.php?action=submit (POST)
 // ============================================
 
@@ -52,9 +53,8 @@ function submitRating() {
         $dbConnection = getConnection();
 
         // Verify ticket belongs to student and is resolved/closed
-        $sqlQuery = "SELECT t.ticket_id, t.status, t.student_id, m.lecturer_id
+        $sqlQuery = "SELECT t.ticket_id, t.ticket_number, t.status, t.student_id, t.assigned_lecturer_id
                      FROM tickets t
-                     JOIN modules m ON t.module_id = m.module_id
                      WHERE t.ticket_id = :ticket_id";
         $param = [':ticket_id' => $ticketId];
         $result = $dbConnection->prepare($sqlQuery);
@@ -79,6 +79,14 @@ function submitRating() {
             exit();
         }
 
+        // Check whether this is a new rating or an edit (so we only notify once)
+        $sqlQuery = "SELECT rating_id FROM ticket_ratings WHERE ticket_id = :ticket_id";
+        $param = [':ticket_id' => $ticketId];
+        $result = $dbConnection->prepare($sqlQuery);
+        $result->execute($param);
+        $existingRating = $result->fetch(PDO::FETCH_ASSOC);
+        $isNewRating = !$existingRating;
+
         // Upsert - insert or update existing rating
         $sqlQuery = "INSERT INTO ticket_ratings 
                      (ticket_id, student_id, lecturer_id, stars, issue_resolved, comment)
@@ -90,13 +98,26 @@ function submitRating() {
         $param = [
             ':ticket_id' => $ticketId,
             ':student_id' => $_SESSION['userID'],
-            ':lecturer_id' => $ticket['lecturer_id'],
+            ':lecturer_id' => $ticket['assigned_lecturer_id'],
             ':stars' => $stars,
             ':issue_resolved' => $issueResolved,
             ':comment' => $comment
         ];
         $result = $dbConnection->prepare($sqlQuery);
         $result->execute($param);
+
+        // Notify the lecturer - only on first submission, not on edits
+        if ($isNewRating && $ticket['assigned_lecturer_id']) {
+            require "../notifications/createNotification.php";
+            $starsText = str_repeat('★', (int) $stars) . str_repeat('☆', 5 - (int) $stars);
+            createNotification(
+                $dbConnection,
+                $ticket['assigned_lecturer_id'],
+                $ticketId,
+                'rating_submitted',
+                "Ticket {$ticket['ticket_number']} received a rating: {$starsText}"
+            );
+        }
 
     } catch (PDOException $e) {
         http_response_code(500);
