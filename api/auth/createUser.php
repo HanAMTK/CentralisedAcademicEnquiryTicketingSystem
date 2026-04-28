@@ -35,7 +35,7 @@ function processCreateUser($input) {
     $password  = $input['password'] ?? 'default123';
 
     // Check if email already exists
-    $sqlQuery = "SELECT user_id FROM users WHERE email = :email LIMIT 1";
+    $sqlQuery = "SELECT user_id FROM ticketing_users WHERE email = :email LIMIT 1";
 
     try {
         $dbConnection = getConnection();

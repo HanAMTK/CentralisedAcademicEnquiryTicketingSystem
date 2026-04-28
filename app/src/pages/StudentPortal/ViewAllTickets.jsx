@@ -513,11 +513,6 @@ const s = {
     transition: background-color 0.2s;
     &:hover { background-color: #f3f4f6; }
   `,
-  backIcon: css`
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #4b5563;
-  `,
   pageTitle: css`
     font-size: 1.875rem;
     font-weight: 700;
