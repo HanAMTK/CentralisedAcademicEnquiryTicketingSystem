@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/css";
 import { useAuth } from "../../context/AuthContext";
-import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
+import { Mail, Lock, AlertCircle } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -46,9 +46,7 @@ const Login = () => {
       <div className={s.card}>
         {/* Header */}
         <div className={s.header}>
-          <div className={s.logoCircle}>
-            <LogIn className={s.logoIcon} />
-          </div>
+          <img src="/KV6027/CAETS/app/CAETS_logo.png" alt="CAETS" className={s.logo} />
           <h1 className={s.title}>Welcome Back</h1>
           <p className={s.subtitle}>Sign in to the Academic Enquiry System</p>
         </div>
@@ -142,22 +140,15 @@ const s = {
   `,
   header: css`
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
   `,
-  logoCircle: css`
-    width: 3.5rem;
-    height: 3.5rem;
-    margin: 0 auto 1rem;
-    background: linear-gradient(to right, #3b82f6, #2563eb);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  `,
-  logoIcon: css`
-    width: 1.5rem;
-    height: 1.5rem;
-    color: #ffffff;
+  logo: css`
+    width: 10rem;
+    height: 10rem;
+    margin: 0 auto 0rem;
+    border-radius: 0.75rem;
+    object-fit: contain;
+    display: block;
   `,
   title: css`
     font-size: 1.5rem;

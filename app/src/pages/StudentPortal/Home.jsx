@@ -73,9 +73,14 @@ const StudentPortalHome = () => {
       <div className={s.header}>
         <div className={s.headerInner}>
           <div className={s.headerLeft}>
-            <div>
+            <button
+              onClick={() => navigate("/student")}
+              className={s.brandButton}
+              aria-label="Go to portal home"
+            >
+              <img src="/KV6027/CAETS/app/CAETS_logo.png" alt="CAETS" className={s.logo} />
               <h1 className={s.pageTitle}>Student Portal</h1>
-            </div>
+            </button>
           </div>
           <div className={s.headerRight}>
             <NotificationBell portal="student" />
@@ -245,18 +250,24 @@ const s = {
     align-items: center;
     gap: 1rem;
   `,
-  backButton: css`
-    padding: 0.5rem;
-    border: none;
+  brandButton: css`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     background: none;
+    border: none;
     cursor: pointer;
-    border-radius: 0.5rem;
-    transition: background-color 0.2s;
-    &:hover {
-      background-color: #f3f4f6;
-    }
+    padding: 0;
+    transition: opacity 0.2s;
+    &:hover { opacity: 0.85; }
   `,
-  backIcon: css`
+  logo: css`
+    height: 2.5rem;
+    width: auto;
+    border-radius: 0.375rem;
+    display: block;
+  `,
+    backIcon: css`
     width: 1.25rem;
     height: 1.25rem;
     color: #4b5563;

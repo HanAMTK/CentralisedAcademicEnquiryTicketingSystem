@@ -286,9 +286,14 @@ const Home = () => {
       <div className={s.header}>
         <div className={s.headerInner}>
           <div className={s.headerLeft}>
-            <div>
+            <button
+              onClick={() => navigate("/lecturer")}
+              className={s.brandButton}
+              aria-label="Go to portal home"
+            >
+              <img src="/KV6027/CAETS/app/CAETS_logo.png" alt="CAETS" className={s.logo} />
               <h1 className={s.pageTitle}>Lecturer Portal</h1>
-            </div>
+            </button>
           </div>
           <div className={s.headerRight}>
             <NotificationBell portal="lecturer" userId="lecturer-002" />
@@ -627,6 +632,28 @@ const s = {
     display: flex;
     align-items: center;
     gap: 1rem;
+  `,
+  brandButton: css`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity 0.2s;
+    &:hover { opacity: 0.85; }
+  `,
+  logo: css`
+    height: 2.5rem;
+    width: auto;
+    border-radius: 0.375rem;
+    display: block;
+  `,
+    backIcon: css`
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #4b5563;
   `,
   pageTitle: css`
     font-size: 1.875rem;
