@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/css";
 import {
@@ -9,10 +9,13 @@ import {
   Lock,
   CheckCircle,
   AlertCircle,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
+
+const TICKETS_API = "https://w25037936.nuwebspace.co.uk/KV6027/CAETS/api/tickets/index.php";
 
 const Profile = ({ portal }) => {
   const navigate = useNavigate();
@@ -26,10 +29,36 @@ const Profile = ({ portal }) => {
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [modules, setModules] = useState([]);
+  const [modulesLoading, setModulesLoading] = useState(false);
+
   const isLecturer = portal === "lecturer";
   const accentColor = isLecturer ? "#4f46e5" : "#2563eb";
   const accentHover = isLecturer ? "#4338ca" : "#1d4ed8";
   const portalPath = isLecturer ? "/lecturer" : "/student";
+
+  // Fetch lecturer's assigned modules
+  useEffect(() => {
+    if (!isLecturer) return;
+
+    const fetchModules = async () => {
+      setModulesLoading(true);
+      try {
+        const res = await fetch(`${TICKETS_API}?action=my-modules`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok && data.modules) {
+          setModules(data.modules);
+        }
+      } catch {
+        // Silently fail - modules section just won't show
+      } finally {
+        setModulesLoading(false);
+      }
+    };
+    fetchModules();
+  }, [isLecturer]);
 
   const handlePasswordSubmit = async () => {
     setError("");
@@ -132,6 +161,36 @@ const Profile = ({ portal }) => {
               </div>
             </div>
           </div>
+
+          {/* Assigned Modules — lecturer only */}
+          {isLecturer && (
+            <div className={s.modulesCard}>
+              <div className={s.modulesHeader}>
+                <BookOpen className={s.modulesIcon} />
+                <div>
+                  <h3 className={s.modulesTitle}>Assigned Modules</h3>
+                  <p className={s.modulesSubtitle}>
+                    Modules you are responsible for
+                  </p>
+                </div>
+              </div>
+
+              {modulesLoading ? (
+                <p className={s.modulesEmpty}>Loading modules...</p>
+              ) : modules.length === 0 ? (
+                <p className={s.modulesEmpty}>You have no modules assigned.</p>
+              ) : (
+                <ul className={s.modulesList}>
+                  {modules.map((m) => (
+                    <li key={m.module_id} className={s.moduleItem}>
+                      <span className={s.moduleCode}>{m.module_code}</span>
+                      <span className={s.moduleName}>{m.module_name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Change Password Section */}
           <div className={s.passwordCard}>
@@ -395,6 +454,73 @@ const s = {
     color: #111827;
     margin: 0;
     padding-left: 1.375rem;
+  `,
+
+  /* Modules Card */
+  modulesCard: css`
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+  `,
+  modulesHeader: css`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  `,
+  modulesIcon: css`
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #6b7280;
+  `,
+  modulesTitle: css`
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  `,
+  modulesSubtitle: css`
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin: 0.125rem 0 0 0;
+  `,
+  modulesEmpty: css`
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+    padding: 0.5rem 0;
+  `,
+  modulesList: css`
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  `,
+  moduleItem: css`
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.75rem 1rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+  `,
+  moduleCode: css`
+    font-family: monospace;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #4f46e5;
+    background-color: #eef2ff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+  `,
+  moduleName: css`
+    font-size: 0.875rem;
+    color: #374151;
   `,
 
   /* Password Card */
