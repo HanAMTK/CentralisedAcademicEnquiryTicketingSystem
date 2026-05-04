@@ -65,7 +65,7 @@ const ChangePassword = () => {
         {isForced && (
           <div className={s.noticeBox}>
             <AlertCircle className={s.noticeIcon} />
-            <span>This is your first login. Please create a new password to secure your account.</span>
+            <span>Please create a new password to secure your account.</span>
           </div>
         )}
 
