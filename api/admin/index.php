@@ -20,6 +20,14 @@ require "getModules.php";
 require "createModule.php";
 require "updateModule.php";
 require "getStats.php";
+require "getCohorts.php";
+require "createCohort.php";
+require "updateCohort.php";
+require "deleteCohort.php";
+require "assignStudentToCohort.php";
+require "bulkAssignToCohort.php";
+require "getCohortModules.php";
+require "setCohortModules.php";
 
 // Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -55,7 +63,6 @@ switch ($_GET['action']) {
         getUsers();
         break;
     case 'create-user':
-        // Reuse existing createUser from auth
         require "../auth/createUser.php";
         createUser();
         break;
@@ -73,6 +80,30 @@ switch ($_GET['action']) {
         break;
     case 'update-module':
         updateModule();
+        break;
+    case 'cohorts':
+        getCohorts();
+        break;
+    case 'create-cohort':
+        createCohort();
+        break;
+    case 'update-cohort':
+        updateCohort();
+        break;
+    case 'delete-cohort':
+        deleteCohort();
+        break;
+    case 'assign-cohort':
+        assignStudentToCohort();
+        break;
+    case 'bulk-assign-cohort':
+        bulkAssignToCohort();
+        break;
+    case 'cohort-modules':
+        getCohortModules();
+        break;
+    case 'set-cohort-modules':
+        setCohortModules();
         break;
     default:
         http_response_code(400);

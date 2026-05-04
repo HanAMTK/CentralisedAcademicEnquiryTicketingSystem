@@ -1,16 +1,19 @@
- <?php
+<?php
 // ============================================
 // getUsers.php
-// Returns all users
+// Returns all users with their cohort info (if any)
 // Called via: index.php?action=users (GET)
 // ============================================
 
 function getUsers() {
     require "../getConnection.php";
 
-    $sqlQuery = "SELECT user_id, email, first_name, last_name, role, is_active, must_change_password, created_at, updated_at
-                 FROM ticketing_users
-                 ORDER BY created_at DESC";
+    $sqlQuery = "SELECT u.user_id, u.email, u.first_name, u.last_name, u.role,
+                        u.is_active, u.must_change_password, u.created_at, u.updated_at,
+                        u.cohort_id, c.name AS cohort_name
+                 FROM ticketing_users u
+                 LEFT JOIN cohorts c ON u.cohort_id = c.cohort_id
+                 ORDER BY u.created_at DESC";
 
     try {
         $dbConnection = getConnection();

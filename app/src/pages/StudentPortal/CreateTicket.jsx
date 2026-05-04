@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/css";
-import { ArrowLeft, Send, AlertCircle, CheckCircle } from "lucide-react";
+import { ArrowLeft, Send, AlertCircle, CheckCircle, Info } from "lucide-react";
 import NotificationBell from "../../components/NotificationBell";
 import UserMenu from "../../components/UserMenu";
 
@@ -95,6 +95,8 @@ const CreateTicket = () => {
     }
   };
 
+  const noModulesAvailable = !isLoadingModules && modules.length === 0;
+
   return (
     <div className={s.pageWrapper}>
       {/* Header */}
@@ -134,6 +136,19 @@ const CreateTicket = () => {
             </div>
           )}
 
+          {/* No modules available */}
+          {noModulesAvailable && (
+            <div className={s.infoBox}>
+              <Info className={s.alertIcon} />
+              <div>
+                <strong>No modules available.</strong>
+                <p className={s.infoText}>
+                  You are not enrolled in any modules yet. Please contact an administrator to be added to a cohort before submitting a ticket.
+                </p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className={s.formCard}>
             <div className={s.formBody}>
               {/* Subject */}
@@ -148,6 +163,7 @@ const CreateTicket = () => {
                   value={formData.subject}
                   onChange={(e) => handleChange("subject", e.target.value)}
                   className={s.input}
+                  disabled={noModulesAvailable}
                 />
               </div>
 
@@ -164,6 +180,7 @@ const CreateTicket = () => {
                     value={formData.category}
                     onChange={(e) => handleChange("category", e.target.value)}
                     className={s.select}
+                    disabled={noModulesAvailable}
                   >
                     <option value="">Select a category</option>
                     {categories.map((cat) => (
@@ -185,10 +202,14 @@ const CreateTicket = () => {
                     value={formData.module_id}
                     onChange={(e) => handleChange("module_id", e.target.value)}
                     className={s.select}
-                    disabled={isLoadingModules}
+                    disabled={isLoadingModules || noModulesAvailable}
                   >
                     <option value="">
-                      {isLoadingModules ? "Loading modules..." : "Select a module"}
+                      {isLoadingModules
+                        ? "Loading modules..."
+                        : noModulesAvailable
+                        ? "No modules available"
+                        : "Select a module"}
                     </option>
                     {modules.map((mod) => (
                       <option key={mod.module_id} value={mod.module_id}>
@@ -209,6 +230,7 @@ const CreateTicket = () => {
                     value={formData.urgency}
                     onChange={(e) => handleChange("urgency", e.target.value)}
                     className={s.select}
+                    disabled={noModulesAvailable}
                   >
                     <option value="">Select urgency</option>
                     {urgencyLevels.map((level) => (
@@ -234,6 +256,7 @@ const CreateTicket = () => {
                   onChange={(e) => handleChange("description", e.target.value)}
                   placeholder="Please provide detailed information about your enquiry..."
                   className={s.textarea}
+                  disabled={noModulesAvailable}
                 />
                 <div className={s.charCount}>
                   <p>{formData.description.length}/2000 characters</p>
@@ -252,7 +275,7 @@ const CreateTicket = () => {
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || noModulesAvailable}
                 className={s.submitButton}
               >
                 <Send className={s.submitIcon} />
@@ -365,10 +388,27 @@ const s = {
     color: #166534;
     font-size: 0.875rem;
   `,
+  infoBox: css`
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 0.5rem;
+    color: #1e40af;
+    font-size: 0.875rem;
+  `,
+  infoText: css`
+    margin: 0.25rem 0 0 0;
+    color: #1e40af;
+  `,
   alertIcon: css`
     width: 1rem;
     height: 1rem;
     flex-shrink: 0;
+    margin-top: 0.125rem;
   `,
   formCard: css`
     background-color: #ffffff;
@@ -416,6 +456,11 @@ const s = {
       border-color: #3b82f6;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
+    &:disabled {
+      background-color: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
   `,
   select: css`
     width: 100%;
@@ -454,6 +499,11 @@ const s = {
     }
     &::placeholder {
       color: #9ca3af;
+    }
+    &:disabled {
+      background-color: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
     }
   `,
   charCount: css`

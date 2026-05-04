@@ -2,6 +2,7 @@
 // ============================================
 // createTicket.php
 // Creates a new ticket and auto-assigns to lecturer
+// Enforces student cohort enrollment for selected module
 // Called via: index.php?action=create (POST)
 // ============================================
 
@@ -92,6 +93,33 @@ function processCreateTicket($input) {
 
     try {
         $dbConnection = getConnection();
+
+        // Enforce cohort enrollment - check the student is in a cohort
+        // and that cohort includes the selected module
+        $sqlQuery = "SELECT cohort_id FROM ticketing_users WHERE user_id = :id LIMIT 1";
+        $result = $dbConnection->prepare($sqlQuery);
+        $result->execute([':id' => $studentId]);
+        $row = $result->fetch(PDO::FETCH_ASSOC);
+        $studentCohortId = $row ? $row['cohort_id'] : null;
+
+        if (empty($studentCohortId)) {
+            http_response_code(403);
+            return "You are not enrolled in any cohort. Please contact an administrator.";
+        }
+
+        // Verify the chosen module is in this student's cohort
+        $sqlQuery = "SELECT 1 FROM cohort_modules
+                     WHERE cohort_id = :cohort_id AND module_id = :module_id LIMIT 1";
+        $result = $dbConnection->prepare($sqlQuery);
+        $result->execute([
+            ':cohort_id' => $studentCohortId,
+            ':module_id' => $moduleId,
+        ]);
+
+        if (!$result->fetch()) {
+            http_response_code(403);
+            return "You are not enrolled in this module.";
+        }
 
         // Look up the module and its assigned lecturer
         $sqlQuery = "SELECT module_id, module_code, module_name, lecturer_id 
